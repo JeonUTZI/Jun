@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>어업 생산량 현황 대시보드</title>
+<style>
+:root {
+  --ps-blue:#0070d1;
+  --ps-blue-pressed:#0064b7;
+  --canvas-dark:#000000;
+  --canvas-light:#ffffff;
+  --surface-card:#f5f7fa;
+  --surface-dark-elevated:#121314;
+  --surface-dark-card:#181818;
+  --hairline-light:#f3f3f3;
+  --hairline-dark:rgba(229,229,229,.2);
+  --body-light:rgba(0,0,0,.6);
+  --body-dark:rgba(255,255,255,.7);
+  --on-dark:#ffffff;
+  --ink:#000000;
+  --gold-start:#ffce21;
+  --gold-mid:#f5a623;
+  --gold-end:#ee8e00;
+  --radius-sm:4px;
+  --radius-md:8px;
+  --radius-full:9999px;
+  --section:96px;
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  margin:0;
+  font-family:"Inter","Roboto","Pretendard","Noto Sans KR","Malgun Gothic",Arial,sans-serif;
+  background:var(--canvas-dark);
+  color:var(--on-dark);
+  overflow-x:hidden;
+}
+button,select,input { font-family:inherit; }
+.top-nav {
+  height:56px;
+  position:sticky;
+  top:0;
+  z-index:99;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 clamp(18px,4vw,48px);
+  background:rgba(0,0,0,.94);
+  border-bottom:1px solid var(--hairline-dark);
+  backdrop-filter:blur(14px);
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:#fff;
+  font-weight:700;
+  letter-spacing:.3px;
+}
+.ps-dot {
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:var(--ps-blue);
+  display:grid;
+  place-items:center;
+  font-weight:900;
+}
+.nav-links {
+  display:flex;
+  gap:22px;
+  font-size:14px;
+  color:var(--body-dark);
+}
+.nav-links a { color:inherit; text-decoration:none; }
+.nav-links a:hover { color:#fff; }
+.hero {
+  min-height:calc(100vh - 56px);
+  display:grid;
+  grid-template-columns:minmax(320px,.78fr) 1.22fr;
+  align-items:center;
+  gap:48px;
+  padding:96px clamp(24px,5vw,72px);
+  background:
+    radial-gradient(circle at 78% 38%,rgba(0,112,209,.42),transparent 30%),
+    linear-gradient(180deg,var(--surface-dark-elevated),var(--canvas-dark));
+}
+.eyebrow {
+  margin-bottom:18px;
+  color:#53b1ff;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+h1 {
+  margin:0 0 24px;
+  font-size:clamp(42px,6.4vw,84px);
+  line-height:1.05;
+  font-weight:300;
+  letter-spacing:-.06em;
+}
+.hero p {
+  max-width:580px;
+  margin:0 0 32px;
+  color:var(--body-dark);
+  line-height:1.7;
+  font-size:18px;
+}
+.hero-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.pill {
+  height:48px;
+  border:0;
+  border-radius:var(--radius-full);
+  padding:12px 28px;
+  background:var(--ps-blue);
+  color:#fff;
+  font-size:16px;
+  font-weight:800;
+  cursor:pointer;
+  transition:transform .18s ease,background .18s ease;
+}
+.pill:hover { transform:translateY(-2px); background:var(--ps-blue-pressed); }
+.pill.secondary {
+  background:transparent;
+  border:1px solid var(--hairline-dark);
+}
+.visual-hero {
+  min-height:560px;
+  position:relative;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border:1px solid var(--hairline-dark);
+  background:
+    radial-gradient(circle at center,rgba(0,112,209,.52),transparent 42%),
+    var(--surface-dark-card);
+}
+.ring {
+  position:absolute;
+  width:min(60vw,620px);
+  height:min(60vw,620px);
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:50%;
+  animation:ringPulse 4.2s ease-in-out infinite;
+}
+.ring.two {
+  width:min(44vw,440px);
+  height:min(44vw,440px);
+  animation-delay:.5s;
+}
+@keyframes ringPulse {
+  0%,100% { transform:scale(.98); opacity:.42; }
+  50% { transform:scale(1.06); opacity:.9; }
+}
+.orbit-card {
+  position:absolute;
+  min-width:180px;
+  padding:18px 20px;
+  border-radius:var(--radius-md);
+  background:rgba(18,19,20,.88);
+  border:1px solid var(--hairline-dark);
+  backdrop-filter:blur(12px);
+}
+.orbit-card strong {
+  display:block;
+  font-size:38px;
+  font-weight:300;
+  letter-spacing:-.05em;
+}
+.orbit-card span { color:var(--body-dark); font-size:13px; }
+.orbit-card.a { left:7%; top:14%; }
+.orbit-card.b { right:7%; top:38%; }
+.orbit-card.c { left:16%; bottom:14%; }
+.band {
+  padding:var(--section) clamp(24px,5vw,72px);
+}
+.band.light {
+  background:var(--canvas-light);
+  color:var(--ink);
+}
+.band.dark {
+  background:var(--canvas-dark);
+  color:var(--on-dark);
+}
+.band.blue {
+  background:var(--ps-blue);
+  color:#fff;
+}
+.section-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:28px;
+  margin-bottom:32px;
+}
+.section-head h2 {
+  margin:0;
+  font-size:clamp(32px,4vw,54px);
+  font-weight:300;
+  line-height:1.14;
+  letter-spacing:-.04em;
+}
+.section-head p {
+  margin:0;
+  max-width:620px;
+  color:var(--body-light);
+  line-height:1.65;
+}
+.dark .section-head p,.blue .section-head p { color:var(--body-dark); }
+.cards {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:24px;
+}
+.card {
+  padding:24px;
+  min-height:160px;
+  border-radius:var(--radius-md);
+  background:var(--surface-card);
+  color:var(--ink);
+  opacity:0;
+  transform:translateY(26px);
+  animation:rise .7s ease forwards;
+}
+.card:nth-child(2) { animation-delay:.08s; }
+.card:nth-child(3) { animation-delay:.16s; }
+.card:nth-child(4) { animation-delay:.24s; }
+@keyframes rise { to { opacity:1; transform:translateY(0); } }
+.card .label {
+  margin-bottom:18px;
+  color:var(--body-light);
+  font-size:14px;
+  font-weight:700;
+}
+.value {
+  font-size:clamp(34px,4vw,54px);
+  font-weight:300;
+  letter-spacing:-.06em;
+  line-height:1;
+}
+.sub {
+  margin-top:14px;
+  color:var(--body-light);
+  font-size:14px;
+  line-height:1.5;
+}
+.card.gold {
+  background:linear-gradient(90deg,var(--gold-start),var(--gold-mid),var(--gold-end));
+  color:#000;
+}
+.filters {
+  display:grid;
+  grid-template-columns:1fr 1fr 1.2fr 1.8fr auto;
+  gap:16px;
+  padding:24px;
+  border:1px solid var(--hairline-dark);
+  border-radius:var(--radius-md);
+  background:rgba(245,247,250,.08);
+}
+.field label {
+  display:block;
+  color:var(--body-dark);
+  font-size:13px;
+  font-weight:800;
+  margin-bottom:8px;
+}
+select,input[type="search"] {
+  width:100%;
+  height:48px;
+  border-radius:var(--radius-sm);
+  border:1px solid rgba(255,255,255,.22);
+  background:#fff;
+  color:#000;
+  padding:0 16px;
+  outline:none;
+  font-size:15px;
+}
+select:focus,input:focus { border:2px solid var(--ps-blue); }
+.slider-card {
+  grid-column:1 / -1;
+  padding:18px 20px;
+  border-radius:var(--radius-md);
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--hairline-dark);
+}
+.range-row {
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:16px;
+  align-items:center;
+}
+.range-row input[type=range] {
+  width:100%;
+  accent-color:var(--ps-blue);
+}
+.range-label {
+  color:#fff;
+  font-weight:800;
+  white-space:nowrap;
+}
+.charts {
+  display:grid;
+  grid-template-columns:1.15fr .85fr;
+  gap:24px;
+}
+.panel {
+  padding:24px;
+  min-width:0;
+  border-radius:var(--radius-md);
+  background:var(--surface-dark-card);
+  border:1px solid var(--hairline-dark);
+  opacity:0;
+  transform:translateY(26px);
+  animation:rise .7s ease forwards;
+}
+.panel h3 {
+  margin:0 0 8px;
+  font-size:22px;
+  font-weight:300;
+  letter-spacing:.1px;
+}
+.panel .desc {
+  margin:0 0 20px;
+  color:var(--body-dark);
+  font-size:14px;
+  line-height:1.5;
+}
+canvas {
+  width:100%;
+  height:340px;
+  display:block;
+}
+.badge {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border-radius:var(--radius-full);
+  padding:8px 16px;
+  background:#fff;
+  color:#000;
+  font-size:14px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.table-panel {
+  overflow:hidden;
+  border-radius:var(--radius-md);
+  background:#fff;
+  color:#000;
+}
+.table-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  padding:24px;
+  border-bottom:1px solid var(--hairline-light);
+}
+.table-top h3 {
+  margin:0;
+  font-size:22px;
+  font-weight:300;
+}
+.table-actions {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  color:var(--body-light);
+  font-size:14px;
+}
+.sort-btn {
+  height:40px;
+  padding:0 16px;
+  border:1px solid #ddd;
+  border-radius:var(--radius-full);
+  background:#fff;
+  cursor:pointer;
+  font-weight:800;
+}
+.table-wrap {
+  max-height:560px;
+  overflow:auto;
+}
+table {
+  width:100%;
+  min-width:920px;
+  border-collapse:collapse;
+  font-size:14px;
+}
+th,td {
+  padding:15px 16px;
+  border-bottom:1px solid #ececec;
+  text-align:right;
+  white-space:nowrap;
+}
+th:first-child,td:first-child {
+  text-align:center;
+  position:sticky;
+  left:0;
+  background:inherit;
+  z-index:1;
+  font-weight:800;
+}
+thead th {
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#f5f7fa;
+  color:#000;
+  font-weight:900;
+}
+thead th:first-child { z-index:3; }
+tbody tr:hover { background:#f5f7fa; }
+tbody tr.max-year {
+  background:linear-gradient(90deg,rgba(255,206,33,.25),transparent);
+}
+tfoot td {
+  background:#000;
+  color:#fff;
+  font-weight:900;
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+.footer-note {
+  margin-top:38px;
+  color:var(--body-dark);
+  line-height:1.6;
+  font-size:14px;
+}
+@media(max-width:1100px) {
+  .hero { grid-template-columns:1fr; }
+  .cards { grid-template-columns:repeat(2,1fr); }
+  .charts { grid-template-columns:1fr; }
+  .filters { grid-template-columns:repeat(2,1fr); }
+  .filters .search-box { grid-column:span 2; }
+}
+@media(max-width:700px) {
+  .nav-links { display:none; }
+  .top-nav { padding:0 18px; }
+  .hero { min-height:auto; padding:64px 22px; }
+  .band { padding:64px 22px; }
+  .section-head { display:block; }
+  .section-head p { margin-top:12px; }
+  .cards,.filters { grid-template-columns:1fr; }
+  .filters .search-box { grid-column:auto; }
+  .visual-hero { min-height:410px; display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:8px; }
+  .orbit-card { position:relative; inset:auto !important; min-width:150px; }
+  .ring { display:none; }
+  canvas { height:300px; }
+}
+</style>
+</head>
+<body>
+<nav class="top-nav">
+  <div class="brand"><div class="ps-dot">○</div><span>Fishery Production</span></div>
+  <div class="nav-links">
+    <a href="#summary">요약</a>
+    <a href="#filter">필터</a>
+    <a href="#visual">시각화</a>
+    <a href="#table">데이터 표</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div>
+    <div class="eyebrow">2001-2013 fishery production dashboard</div>
+    <h1>어업 생산량 현황 대시보드</h1>
+    <p>CSV 품종별 어업 생산량 데이터를 기반으로 총 생산량 흐름, 품종별 누적 생산량, 어류와 해조류의 비교를 한 화면에서 확인할 수 있습니다.</p>
+    <div class="hero-actions">
+      <a href="#visual"><button class="pill">그래프 보기</button></a>
+      <a href="#table"><button class="pill secondary">데이터 표 보기</button></a>
+    </div>
+  </div>
+  <div class="visual-hero">
+    <div class="ring"></div>
+    <div class="ring two"></div>
+    <div class="orbit-card a"><strong id="heroTotal">0</strong><span>전체 생산량 합계</span></div>
+    <div class="orbit-card b"><strong id="heroMaxYear">2008</strong><span>최고 생산 연도</span></div>
+    <div class="orbit-card c"><strong>2001~2013</strong><span>데이터 기간</span></div>
+  </div>
+</header>
+
+<section class="band light" id="summary">
+  <div class="section-head">
+    <h2>요약 카드</h2>
+    <p id="filterSummary">전체 기간 · 전체 품종 기준</p>
+  </div>
+  <div class="cards">
+    <article class="card">
+      <div class="label">총 생산량</div>
+      <div class="value counter" id="totalProduction">0</div>
+      <div class="sub">선택 조건의 계 합계 · 천M/T</div>
+    </article>
+    <article class="card">
+      <div class="label">연평균 생산량</div>
+      <div class="value counter" id="avgProduction">0</div>
+      <div class="sub">계 기준 평균 · 천M/T</div>
+    </article>
+    <article class="card gold">
+      <div class="label">최고 생산 연도</div>
+      <div class="value" id="maxYear">2008년</div>
+      <div class="sub" id="maxYearSub">3,361 천M/T</div>
+    </article>
+    <article class="card">
+      <div class="label">최다 누적 품종</div>
+      <div class="value" id="topType">-</div>
+      <div class="sub" id="topTypeSub">-</div>
+    </article>
+  </div>
+</section>
+
+<section class="band dark" id="filter">
+  <div class="section-head">
+    <h2>검색 · 필터</h2>
+    <p>연도 범위, 품종, 생산량 범위를 바꾸면 요약 카드, 표, 그래프가 동시에 다시 계산됩니다.</p>
+  </div>
+  <div class="filters">
+    <div class="field">
+      <label for="startYear">시작 연도</label>
+      <select id="startYear"></select>
+    </div>
+    <div class="field">
+      <label for="endYear">종료 연도</label>
+      <select id="endYear"></select>
+    </div>
+    <div class="field">
+      <label for="typeFilter">품종 선택</label>
+      <select id="typeFilter">
+        <option value="전체">전체 품종</option>
+      </select>
+    </div>
+    <div class="field search-box">
+      <label for="searchInput">텍스트 검색</label>
+      <input id="searchInput" type="search" placeholder="예: 2008, 어류, 해조류, 갑각류" />
+    </div>
+    <button class="pill" id="resetBtn" type="button">초기화</button>
+    <div class="slider-card">
+      <div class="range-row">
+        <input id="productionRange" type="range" min="0" max="4000" value="4000" step="10" />
+        <div class="range-label">최대 <span id="rangeValue">4,000</span> 천M/T</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band dark" id="visual">
+  <div class="section-head">
+    <h2>시각화</h2>
+    <span class="badge" id="highlightBadge">최고 생산 연도: 2008년</span>
+  </div>
+  <div class="charts">
+    <article class="panel">
+      <h3>연도별 총 생산량(계) 추이</h3>
+      <p class="desc">생산량 최고 연도인 2008년을 골드 포인트로 강조했습니다.</p>
+      <canvas id="lineChart"></canvas>
+    </article>
+    <article class="panel">
+      <h3>품종별 생산량 합계</h3>
+      <p class="desc">선택 기간 내 품종별 누적 생산량을 막대 차트로 비교합니다.</p>
+      <canvas id="barChart"></canvas>
+    </article>
+    <article class="panel">
+      <h3>어류 vs 해조류 비교</h3>
+      <p class="desc">연도별 어류와 해조류 생산량을 같은 축에서 비교합니다.</p>
+      <canvas id="compareChart"></canvas>
+    </article>
+    <article class="panel">
+      <h3>선택 품종 연도별 추이</h3>
+      <p class="desc">품종 선택 필터를 바꾸면 해당 품종의 변화가 표시됩니다.</p>
+      <canvas id="typeTrendChart"></canvas>
+    </article>
+  </div>
+</section>
+
+<section class="band light" id="table">
+  <div class="section-head">
+    <h2>데이터 표</h2>
+    <p id="rowCount">13개 연도 표시</p>
+  </div>
+  <article class="table-panel">
+    <div class="table-top">
+      <h3>연도별 어업 생산량 현황</h3>
+      <div class="table-actions">
+        <span>연도 정렬</span>
+        <button class="sort-btn" id="sortBtn">내림차순</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="dataTable">
+        <thead></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
+  </article>
+</section>
+
+<section class="band blue">
+  <div class="section-head">
+    <h2>생산량 데이터 인사이트</h2>
+    <p>2008년의 총 생산량 최고점을 기준으로 품종별 생산 구조와 연도별 흐름을 빠르게 비교할 수 있습니다.</p>
+  </div>
+</section>
+
+<script>
+const rawData = [{"연도": 2001, "계": 2665, "어류": 1467, "패류": 283, "갑각류": 74, "연체동물": 413, "기타수산동물": 39, "해조류": 388}, {"연도": 2002, "계": 2476, "어류": 1202, "패류": 272, "갑각류": 72, "연체동물": 394, "기타수산동물": 27, "해조류": 508}, {"연도": 2003, "계": 2487, "어류": 1144, "패류": 403, "갑각류": 89, "연체동물": 379, "기타수산동물": 15, "해조류": 457}, {"연도": 2004, "계": 2519, "어류": 1157, "패류": 410, "갑각류": 85, "연체동물": 306, "기타수산동물": 15, "해조류": 546}, {"연도": 2005, "계": 2714, "어류": 1265, "패류": 409, "갑각류": 92, "연체동물": 295, "기타수산동물": 16, "해조류": 636}, {"연도": 2006, "계": 3032, "어류": 1261, "패류": 474, "갑각류": 110, "연체동물": 392, "기타수산동물": 17, "해조류": 778}, {"연도": 2007, "계": 3275, "어류": 1330, "패류": 555, "갑각류": 124, "연체동물": 432, "기타수산동물": 23, "해조류": 811}, {"연도": 2008, "계": 3361, "어류": 1448, "패류": 428, "갑각류": 126, "연체동물": 402, "기타수산동물": 23, "해조류": 935}, {"연도": 2009, "계": 3182, "어류": 1425, "패류": 420, "갑각류": 132, "연체동물": 312, "기타수산동물": 24, "해조류": 870}, {"연도": 2010, "계": 3111, "어류": 1331, "패류": 440, "갑각류": 147, "연체동물": 256, "기타수산동물": 22, "해조류": 915}, {"연도": 2011, "계": 3256, "어류": 1356, "패류": 467, "갑각류": 130, "연체동물": 269, "기타수산동물": 28, "해조류": 1007}, {"연도": 2012, "계": 3183, "어류": 1268, "패류": 433, "갑각류": 135, "연체동물": 293, "기타수산동물": 23, "해조류": 1032}, {"연도": 2013, "계": 3135, "어류": 1195, "패류": 346, "갑각류": 149, "연체동물": 282, "기타수산동물": 23, "해조류": 1140}];
+const columns = ["연도","계","어류","패류","갑각류","연체동물","기타수산동물","해조류"];
+const typeColumns = ["어류","패류","갑각류","연체동물","기타수산동물","해조류"];
+const allYears = rawData.map(d => d["연도"]);
+const fmt = new Intl.NumberFormat("ko-KR");
+const state = {
+  startYear: Math.min(...allYears),
+  endYear: Math.max(...allYears),
+  type: "전체",
+  search: "",
+  maxProduction: Math.max(...rawData.map(d => d["계"])),
+  sortAsc: true
+};
+const chartAnimations = new Map();
+
+function setupControls(){
+  const start = document.getElementById("startYear");
+  const end = document.getElementById("endYear");
+  const type = document.getElementById("typeFilter");
+  const range = document.getElementById("productionRange");
+  range.max = Math.ceil(Math.max(...rawData.map(d => d["계"])) / 10) * 10;
+  range.value = range.max;
+  document.getElementById("rangeValue").textContent = fmt.format(Number(range.value));
+
+  allYears.forEach(y => {
+    start.insertAdjacentHTML("beforeend", `<option value="${y}">${y}년</option>`);
+    end.insertAdjacentHTML("beforeend", `<option value="${y}">${y}년</option>`);
+  });
+  typeColumns.forEach(t => {
+    type.insertAdjacentHTML("beforeend", `<option value="${t}">${t}</option>`);
+  });
+  start.value = state.startYear;
+  end.value = state.endYear;
+
+  start.addEventListener("change", () => {
+    state.startYear = Number(start.value);
+    if(state.startYear > state.endYear){ state.endYear = state.startYear; end.value = state.endYear; }
+    render();
+  });
+  end.addEventListener("change", () => {
+    state.endYear = Number(end.value);
+    if(state.endYear < state.startYear){ state.startYear = state.endYear; start.value = state.startYear; }
+    render();
+  });
+  type.addEventListener("change", () => { state.type = type.value; render(); });
+  document.getElementById("searchInput").addEventListener("input", e => {
+    state.search = e.target.value.trim().toLowerCase();
+    render();
+  });
+  range.addEventListener("input", e => {
+    state.maxProduction = Number(e.target.value);
+    document.getElementById("rangeValue").textContent = fmt.format(state.maxProduction);
+    render();
+  });
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    state.startYear = Math.min(...allYears);
+    state.endYear = Math.max(...allYears);
+    state.type = "전체";
+    state.search = "";
+    state.maxProduction = Number(range.max);
+    start.value = state.startYear;
+    end.value = state.endYear;
+    type.value = "전체";
+    range.value = range.max;
+    document.getElementById("rangeValue").textContent = fmt.format(Number(range.max));
+    document.getElementById("searchInput").value = "";
+    render();
+  });
+  document.getElementById("sortBtn").addEventListener("click", () => {
+    state.sortAsc = !state.sortAsc;
+    document.getElementById("sortBtn").textContent = state.sortAsc ? "내림차순" : "오름차순";
+    renderTable(getFilteredData());
+  });
+}
+
+function getFilteredData(){
+  return rawData.filter(row => {
+    const inYear = row["연도"] >= state.startYear && row["연도"] <= state.endYear;
+    const underMax = row["계"] <= state.maxProduction;
+    const searchable = [...Object.entries(row).map(([k,v]) => `${k} ${v}`), ...typeColumns].join(" ").toLowerCase();
+    const inSearch = !state.search || searchable.includes(state.search);
+    return inYear && underMax && inSearch;
+  }).sort((a,b) => a["연도"] - b["연도"]);
+}
+
+function sumByType(rows){
+  const sums = Object.fromEntries(typeColumns.map(t => [t,0]));
+  rows.forEach(r => typeColumns.forEach(t => sums[t] += Number(r[t] || 0)));
+  return sums;
+}
+
+function animateNumber(el, value){
+  const start = Number(el.dataset.current || 0);
+  const end = Number(value || 0);
+  el.dataset.current = end;
+  const duration = 820;
+  const t0 = performance.now();
+  function tick(now){
+    const p = Math.min((now - t0) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const cur = start + (end - start) * eased;
+    el.textContent = fmt.format(Math.round(cur));
+    if(p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function renderCards(rows){
+  const total = rows.reduce((s,r) => s + r["계"], 0);
+  const avg = rows.length ? Math.round(total / rows.length) : 0;
+  const sums = sumByType(rows);
+  const [topName, topValue] = Object.entries(sums).sort((a,b) => b[1] - a[1])[0] || ["-",0];
+  const maxRow = rows.reduce((best,r) => !best || r["계"] > best["계"] ? r : best, null);
+
+  animateNumber(document.getElementById("totalProduction"), total);
+  animateNumber(document.getElementById("avgProduction"), avg);
+  animateNumber(document.getElementById("heroTotal"), total);
+  document.getElementById("heroMaxYear").textContent = maxRow ? maxRow["연도"] : "-";
+  document.getElementById("maxYear").textContent = maxRow ? `${maxRow["연도"]}년` : "-";
+  document.getElementById("maxYearSub").textContent = maxRow ? `${fmt.format(maxRow["계"])} 천M/T` : "-";
+  document.getElementById("topType").textContent = topName;
+  document.getElementById("topTypeSub").textContent = `${fmt.format(topValue)} 천M/T · 품종별 합계`;
+  document.getElementById("filterSummary").textContent =
+    `${state.startYear}년~${state.endYear}년 · ${state.type === "전체" ? "전체 품종" : state.type} · 계 ${fmt.format(state.maxProduction)} 이하`;
+  document.getElementById("highlightBadge").textContent = maxRow ? `최고 생산 연도: ${maxRow["연도"]}년 (${fmt.format(maxRow["계"])} 천M/T)` : "표시할 데이터 없음";
+}
+
+function renderTable(rows){
+  const sorted = [...rows].sort((a,b) => state.sortAsc ? a["연도"] - b["연도"] : b["연도"] - a["연도"]);
+  const visibleColumns = state.type === "전체" ? columns : ["연도","계",state.type];
+  const thead = document.querySelector("#dataTable thead");
+  const tbody = document.querySelector("#dataTable tbody");
+  const tfoot = document.querySelector("#dataTable tfoot");
+
+  thead.innerHTML = `<tr>${visibleColumns.map(c => `<th>${c}</th>`).join("")}</tr>`;
+  tbody.innerHTML = sorted.map(r => `
+    <tr class="${r["연도"] === 2008 ? "max-year" : ""}">
+      ${visibleColumns.map(c => `<td>${fmt.format(r[c])}</td>`).join("")}
+    </tr>
+  `).join("");
+
+  const totalRow = visibleColumns.map(c => c === "연도" ? "합계" : fmt.format(rows.reduce((s,r) => s + Number(r[c] || 0),0)));
+  tfoot.innerHTML = `<tr>${totalRow.map(v => `<td>${v}</td>`).join("")}</tr>`;
+  document.getElementById("rowCount").textContent = `${fmt.format(rows.length)}개 연도 표시`;
+}
+
+function clearCanvas(canvas){
+  const ctx = canvas.getContext("2d");
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, rect.width * ratio);
+  canvas.height = Math.max(1, rect.height * ratio);
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  ctx.clearRect(0,0,rect.width,rect.height);
+  return {ctx,w:rect.width,h:rect.height};
+}
+function niceMax(v){
+  if(v <= 0) return 10;
+  const exp = Math.floor(Math.log10(v));
+  const base = Math.pow(10, exp);
+  return Math.ceil(v / base) * base;
+}
+function animateChart(id, drawer){
+  if(chartAnimations.has(id)) cancelAnimationFrame(chartAnimations.get(id));
+  const start = performance.now();
+  const duration = 980;
+  function frame(now){
+    const p = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 4);
+    drawer(eased);
+    if(p < 1) chartAnimations.set(id, requestAnimationFrame(frame));
+  }
+  requestAnimationFrame(frame);
+}
+function drawEmpty(ctx,w,h){
+  ctx.fillStyle = "rgba(255,255,255,.72)";
+  ctx.font = "15px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("표시할 데이터가 없습니다.", w/2, h/2);
+}
+function roundRect(ctx,x,y,width,height,radius){
+  const r = Math.min(radius, Math.max(width,0)/2, height/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+width,y,x+width,y+height,r);
+  ctx.arcTo(x+width,y+height,x,y+height,r);
+  ctx.arcTo(x,y+height,x,y,r);
+  ctx.arcTo(x,y,x+width,y,r);
+  ctx.closePath();
+}
+function drawAxes(ctx,w,h,maxVal,labels){
+  const pad = {left:62,right:28,top:26,bottom:52};
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+  ctx.strokeStyle = "rgba(229,229,229,.22)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left,pad.top);
+  ctx.lineTo(pad.left,pad.top+plotH);
+  ctx.lineTo(pad.left+plotW,pad.top+plotH);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.64)";
+  ctx.font = "12px Arial";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for(let i=0;i<=4;i++){
+    const val = Math.round(maxVal * i / 4);
+    const y = pad.top + plotH - plotH * i / 4;
+    ctx.strokeStyle = "rgba(229,229,229,.08)";
+    ctx.beginPath();
+    ctx.moveTo(pad.left,y);
+    ctx.lineTo(pad.left+plotW,y);
+    ctx.stroke();
+    ctx.fillText(fmt.format(val), pad.left - 10, y);
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  labels.forEach((label,i) => {
+    const x = labels.length === 1 ? pad.left + plotW/2 : pad.left + plotW * i / (labels.length - 1);
+    if(i % Math.ceil(labels.length/8) === 0 || labels.length <= 8) ctx.fillText(label, x, pad.top+plotH+14);
+  });
+  return {pad,plotW,plotH};
+}
+
+function drawLineChart(id, rows, keys, labels, colors){
+  const canvas = document.getElementById(id);
+  if(!rows.length){
+    const {ctx,w,h} = clearCanvas(canvas);
+    return drawEmpty(ctx,w,h);
+  }
+  const xLabels = rows.map(r => String(r["연도"]));
+  const allValues = keys.flatMap(k => rows.map(r => Number(r[k] || 0)));
+  const maxVal = niceMax(Math.max(...allValues));
+  animateChart(id, progress => {
+    const {ctx,w,h} = clearCanvas(canvas);
+    const {pad,plotW,plotH} = drawAxes(ctx,w,h,maxVal,xLabels);
+    keys.forEach((key,ki) => {
+      const values = rows.map(r => Number(r[key] || 0));
+      ctx.strokeStyle = colors[ki];
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      values.forEach((v,i) => {
+        const x = values.length === 1 ? pad.left + plotW/2 : pad.left + plotW * i / (values.length - 1);
+        const y = pad.top + plotH - ((v * progress) / maxVal) * plotH;
+        if(i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+
+      values.forEach((v,i) => {
+        const x = values.length === 1 ? pad.left + plotW/2 : pad.left + plotW * i / (values.length - 1);
+        const y = pad.top + plotH - ((v * progress) / maxVal) * plotH;
+        ctx.fillStyle = rows[i]["연도"] === 2008 && key === "계" ? "#ffce21" : "#000";
+        ctx.strokeStyle = rows[i]["연도"] === 2008 && key === "계" ? "#ffce21" : "#fff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x,y, rows[i]["연도"] === 2008 && key === "계" ? 6 : 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+      });
+    });
+    ctx.font = "13px Arial";
+    labels.forEach((label,i) => {
+      ctx.fillStyle = colors[i];
+      ctx.textAlign = "left";
+      ctx.fillText(label, pad.left + i*96, 16);
+    });
+  });
+}
+
+function drawBarChart(id, rows){
+  const canvas = document.getElementById(id);
+  if(!rows.length){
+    const {ctx,w,h} = clearCanvas(canvas);
+    return drawEmpty(ctx,w,h);
+  }
+  const sums = Object.entries(sumByType(rows)).sort((a,b)=>b[1]-a[1]);
+  const selected = state.type !== "전체" ? state.type : sums[0]?.[0];
+  const maxVal = niceMax(Math.max(...sums.map(d=>d[1])));
+  animateChart(id, progress => {
+    const {ctx,w,h} = clearCanvas(canvas);
+    const pad = {left:108,right:44,top:18,bottom:16};
+    const rowH = (h - pad.top - pad.bottom) / sums.length;
+    const plotW = w - pad.left - pad.right;
+    ctx.font = "12px Arial";
+    sums.forEach(([name,val],i) => {
+      const y = pad.top + i*rowH + rowH*.18;
+      const barH = rowH*.58;
+      const bw = (val / maxVal) * plotW * progress;
+      ctx.fillStyle = name === selected ? "#ffce21" : "#0070d1";
+      roundRect(ctx,pad.left,y,bw,barH,8);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.72)";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(name, pad.left - 10, y + barH/2);
+      ctx.textAlign = "left";
+      ctx.fillText(fmt.format(Math.round(val * progress)), pad.left + bw + 8, y + barH/2);
+    });
+  });
+}
+
+function render(){
+  const rows = getFilteredData();
+  renderCards(rows);
+  renderTable(rows);
+  drawLineChart("lineChart", rows, ["계"], ["계"], ["#53b1ff"]);
+  drawBarChart("barChart", rows);
+  drawLineChart("compareChart", rows, ["어류","해조류"], ["어류","해조류"], ["#53b1ff","#ffce21"]);
+  const key = state.type === "전체" ? "어류" : state.type;
+  drawLineChart("typeTrendChart", rows, [key], [key], ["#53b1ff"]);
+}
+
+setupControls();
+render();
+window.addEventListener("resize", () => render());
+</script>
+</body>
+</html>
